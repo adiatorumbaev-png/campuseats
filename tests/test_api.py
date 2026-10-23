@@ -25,7 +25,7 @@ def login(client, email, password):
 
 
 def test_register_and_login(client):
-    r = client.post("/api/auth/register", json={"name": "Адият", "email": "a@campus.kz", "password": "secret1"})
+    r = client.post("/api/auth/register", json={"name": "Айдана", "email": "a@campus.kz", "password": "secret1"})
     assert r.status_code == 201
     assert r.json()["user"]["role"] == "student"
     assert client.post("/api/auth/login", json={"email": "a@campus.kz", "password": "wrong!"}).status_code == 401
