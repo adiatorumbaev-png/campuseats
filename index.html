@@ -189,6 +189,13 @@ main { max-width: 760px; margin: 0 auto; padding-block: 8px 110px; padding-left:
   .admin-row .toggle { grid-column: 1 / -1; }
 }
 
+/* ---------- Быстрый вход ---------- */
+.quick-title { font-weight: 800; margin: 18px 0 8px; }
+.quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.quick .btn { padding: 12px 6px; font-size: 14px; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; margin: 18px 0 0; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
 .demo-bar { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--text); font-size: 13px; padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); text-align: center; }
 .demo-bar button { border: 0; background: none; color: var(--accent-dark); font: inherit; font-weight: 700; cursor: pointer; text-decoration: underline; }
@@ -209,6 +216,14 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     <div class="auth-card">
       <div class="logo">🍲 <span>Campus<b>Eats</b></span></div>
       <p class="muted">Заказ еды в столовой колледжа без очередей</p>
+
+      <p class="quick-title">Быстрый вход</p>
+      <div class="quick">
+        <button type="button" class="btn primary" data-quick="student">🎓 Студент</button>
+        <button type="button" class="btn" data-quick="cook">👨‍🍳 Повар</button>
+        <button type="button" class="btn" data-quick="admin">⚙️ Админ</button>
+      </div>
+      <p class="or"><span>или своим аккаунтом</span></p>
 
       <div class="switch">
         <button class="switch-btn active" data-auth="login">Вход</button>
@@ -2753,6 +2768,8 @@ const MockServer = (() => {
 
   return {
     request(method, url, body, auth) {
+      // перечитываем данные перед каждым запросом: так вкладки студента и повара видят одни заказы
+      try { const saved = JSON.parse(localStorage.getItem(KEY)); if (saved) db = saved; } catch {}
       // небольшая задержка, как у настоящей сети
       return new Promise((resolve) => setTimeout(() => resolve(handle(method, url, body || {}, auth)), 120));
     },
@@ -2826,13 +2843,9 @@ document.querySelectorAll("[data-auth]").forEach((btn) =>
   })
 );
 
-$("#auth-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const form = new FormData(e.target);
-  const body = { email: form.get("email"), password: form.get("password") };
-  if (authMode === "register") body.name = form.get("name");
+async function authenticate(mode, body) {
   try {
-    const data = await api("/api/auth/" + authMode, { method: "POST", body });
+    const data = await api("/api/auth/" + mode, { method: "POST", body });
     state.token = data.token;
     save("ce_token", data.token);
     state.user = data.user;
@@ -2842,7 +2855,25 @@ $("#auth-form").addEventListener("submit", async (e) => {
     box.textContent = err.status === 422 ? "Проверьте поля: имя от 2 символов, пароль от 6" : err.message;
     box.classList.remove("hidden");
   }
+}
+
+$("#auth-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const form = new FormData(e.target);
+  const body = { email: form.get("email"), password: form.get("password") };
+  if (authMode === "register") body.name = form.get("name");
+  authenticate(authMode, body);
 });
+
+// Быстрый вход тестовыми аккаунтами — без ввода email и пароля
+const QUICK = {
+  student: { email: "student@campus.kz", password: "student123" },
+  cook: { email: "cook@campus.kz", password: "cook123" },
+  admin: { email: "admin@campus.kz", password: "admin123" },
+};
+document.querySelectorAll("[data-quick]").forEach((b) =>
+  b.addEventListener("click", () => authenticate("login", QUICK[b.dataset.quick]))
+);
 
 function logout() {
   return useRole("1");
@@ -2888,8 +2919,8 @@ function show(view) {
   clearInterval(state.timer);
   if (view === "menu") loadDishes();
   if (view === "cart") renderCart();
-  if (view === "orders") { loadMyOrders(); state.timer = setInterval(loadMyOrders, 5000); }
-  if (view === "kitchen") { loadKitchen(); state.timer = setInterval(loadKitchen, 5000); }
+  if (view === "orders") { loadMyOrders(); state.timer = setInterval(loadMyOrders, 2000); }
+  if (view === "kitchen") { lastNewIds = null; loadKitchen(); state.timer = setInterval(loadKitchen, 2000); }
   if (view === "admin") loadAdmin();
 }
 
@@ -3094,8 +3125,12 @@ $("#qr-close").addEventListener("click", () => $("#qr-modal").classList.add("hid
 
 // ---------- Кухня ----------
 
+let lastNewIds = null;
 async function loadKitchen() {
   const orders = await api("/api/orders");
+  const newIds = orders.filter((o) => o.status === "new").map((o) => o.id);
+  if (lastNewIds && newIds.some((id) => !lastNewIds.includes(id))) toast("🔔 Новый заказ!");
+  lastNewIds = newIds;
   $("#kitchen-list").innerHTML = orders.length
     ? orders.map((o) => orderCard(o, true)).join("")
     : `<p class="empty">Активных заказов нет</p>`;
