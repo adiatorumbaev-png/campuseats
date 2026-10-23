@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CampusEats — столовая колледжа</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/qrcode.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <!-- ===== Экран авторизации ===== -->
+  <section id="auth-screen" class="auth hidden">
+    <div class="auth-card">
+      <div class="logo">🍲 <span>Campus<b>Eats</b></span></div>
+      <p class="muted">Заказ еды в столовой колледжа без очередей</p>
+
+      <div class="switch">
+        <button class="switch-btn active" data-auth="login">Вход</button>
+        <button class="switch-btn" data-auth="register">Регистрация</button>
+      </div>
+
+      <form id="auth-form" autocomplete="on">
+        <label id="name-field" class="hidden">Имя и фамилия
+          <input name="name" type="text" placeholder="Например, Адият Орумбаев">
+        </label>
+        <label>Email
+          <input name="email" type="email" required placeholder="student@campus.kz">
+        </label>
+        <label>Пароль
+          <input name="password" type="password" required minlength="6" placeholder="Минимум 6 символов">
+        </label>
+        <p id="auth-error" class="error hidden"></p>
+        <button type="submit" class="btn primary wide" id="auth-submit">Войти</button>
+      </form>
+
+      <details class="demo">
+        <summary>Тестовые аккаунты</summary>
+        <p>Студент: student@campus.kz / student123<br>
+           Повар: cook@campus.kz / cook123<br>
+           Админ: admin@campus.kz / admin123</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ===== Основное приложение ===== -->
+  <div id="app" class="hidden">
+    <header class="topbar">
+      <div class="logo small">🍲 <span>Campus<b>Eats</b></span></div>
+      <div class="user-box">
+        <span id="balance" class="balance"></span>
+        <button id="logout" class="btn small">Выйти</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Меню -->
+      <section id="view-menu" class="view">
+        <h1 id="hello">Меню</h1>
+        <input id="search" class="search" type="search" placeholder="Поиск блюда…">
+        <div id="categories" class="chips"></div>
+        <div id="dishes" class="grid"></div>
+      </section>
+
+      <!-- Корзина -->
+      <section id="view-cart" class="view hidden">
+        <h1>Корзина</h1>
+        <div id="cart-list"></div>
+        <div id="cart-footer" class="cart-footer">
+          <label>Когда заберёте?
+            <select id="pickup">
+              <option>После 1 пары (10:00)</option>
+              <option selected>Большая перемена после 2 пары (11:40)</option>
+              <option>После 3 пары (13:40)</option>
+              <option>После 4 пары (15:20)</option>
+            </select>
+          </label>
+          <div class="total-row"><span>Итого</span><b id="cart-total">0 ₸</b></div>
+          <p id="order-error" class="error hidden"></p>
+          <div id="replace-box" class="replace hidden"></div>
+          <button id="checkout" class="btn primary wide">Оформить заказ</button>
+        </div>
+      </section>
+
+      <!-- Мои заказы -->
+      <section id="view-orders" class="view hidden">
+        <h1>Мои заказы</h1>
+        <div id="orders-list"></div>
+      </section>
+
+      <!-- Кухня (повар / админ) -->
+      <section id="view-kitchen" class="view hidden">
+        <h1>Заказы на кухне</h1>
+        <p class="muted">Обновляется автоматически каждые 5 секунд</p>
+        <div id="kitchen-list"></div>
+      </section>
+
+      <!-- Админ: меню и баланс -->
+      <section id="view-admin" class="view hidden">
+        <h1>Управление</h1>
+        <h2>Пополнить баланс студента</h2>
+        <form id="topup-form" class="inline-form">
+          <input name="email" type="email" placeholder="Email студента" required>
+          <input name="amount" type="number" min="1" step="1" placeholder="Сумма, ₸" required>
+          <button class="btn primary">Пополнить</button>
+        </form>
+        <p id="topup-msg" class="muted"></p>
+
+        <h2>Добавить блюдо</h2>
+        <form id="dish-form" class="inline-form">
+          <input name="title" placeholder="Название" required>
+          <input name="price" type="number" min="1" placeholder="Цена, ₸" required>
+          <input name="category" placeholder="Категория" required list="cat-list">
+          <datalist id="cat-list"></datalist>
+          <button class="btn primary">Добавить</button>
+        </form>
+
+        <h2>Меню</h2>
+        <div id="admin-dishes"></div>
+      </section>
+    </main>
+
+    <nav class="tabbar" id="tabbar"></nav>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Окно с QR-кодом -->
+  <div id="qr-modal" class="modal hidden">
+    <div class="modal-card">
+      <h2 id="qr-title">Заказ</h2>
+      <div id="qr-box"></div>
+      <p class="muted">Покажите этот код на кассе при получении</p>
+      <button class="btn wide" id="qr-close">Закрыть</button>
+    </div>
+  </div>
+</body>
+</html>
