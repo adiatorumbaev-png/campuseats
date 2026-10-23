@@ -64,13 +64,9 @@ document.querySelectorAll("[data-auth]").forEach((btn) =>
   })
 );
 
-$("#auth-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const form = new FormData(e.target);
-  const body = { email: form.get("email"), password: form.get("password") };
-  if (authMode === "register") body.name = form.get("name");
+async function authenticate(mode, body) {
   try {
-    const data = await api("/api/auth/" + authMode, { method: "POST", body });
+    const data = await api("/api/auth/" + mode, { method: "POST", body });
     state.token = data.token;
     save("ce_token", data.token);
     state.user = data.user;
@@ -80,7 +76,25 @@ $("#auth-form").addEventListener("submit", async (e) => {
     box.textContent = err.status === 422 ? "Проверьте поля: имя от 2 символов, пароль от 6" : err.message;
     box.classList.remove("hidden");
   }
+}
+
+$("#auth-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const form = new FormData(e.target);
+  const body = { email: form.get("email"), password: form.get("password") };
+  if (authMode === "register") body.name = form.get("name");
+  authenticate(authMode, body);
 });
+
+// Быстрый вход тестовыми аккаунтами — без ввода email и пароля
+const QUICK = {
+  student: { email: "student@campus.kz", password: "student123" },
+  cook: { email: "cook@campus.kz", password: "cook123" },
+  admin: { email: "admin@campus.kz", password: "admin123" },
+};
+document.querySelectorAll("[data-quick]").forEach((b) =>
+  b.addEventListener("click", () => authenticate("login", QUICK[b.dataset.quick]))
+);
 
 function logout() {
   state.token = null;

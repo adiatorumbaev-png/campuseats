@@ -66,7 +66,8 @@ def register(data: RegisterIn, db: Session = Depends(get_db)):
     user = models.User(
         name=data.name.strip(), email=email,
         password_hash=hash_password(data.password),
-        role=models.ROLE_STUDENT, balance=Decimal("0"),
+        # стартовый баланс, чтобы новый студент мог сразу проверить заказ
+        role=models.ROLE_STUDENT, balance=Decimal("3000"),
     )
     db.add(user)
     db.commit()
